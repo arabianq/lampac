@@ -43,7 +43,8 @@ public class TelemetryController : BaseController
 
     private static List<object> MapMovies(List<MovieRawDto> raw)
     {
-        return raw.Select(m => new {
+        return raw.Select(m => new
+        {
             title = m.Title,
             id = m.Tmdb ?? m.Kp ?? m.Imdb ?? m.Title,
             tmdb = m.Tmdb,
@@ -134,7 +135,8 @@ public class TelemetryController : BaseController
 
         var logs = await query.OrderByDescending(l => l.Time).Skip(skip).Take(take)
             .GroupJoin(db.Users, l => l.UnfoId, u => u.Id, (l, users) => new { Log = l, Users = users })
-            .SelectMany(x => x.Users.DefaultIfEmpty(), (x, u) => new {
+            .SelectMany(x => x.Users.DefaultIfEmpty(), (x, u) => new
+            {
                 id = x.Log.Id,
                 time = x.Log.Time,
                 uri = x.Log.Uri,
@@ -206,7 +208,8 @@ public class TelemetryController : BaseController
         var topMoviesRaw = await baseQuery
             .Where(l => l.MovieTitle != null && l.MovieTitle != "")
             .GroupBy(l => l.MovieTitle)
-            .Select(g => new MovieRawDto {
+            .Select(g => new MovieRawDto
+            {
                 Title = g.Key,
                 Tmdb = g.Max(l => l.TmdbId),
                 Kp = g.Max(l => l.KpId),
@@ -302,7 +305,8 @@ public class TelemetryController : BaseController
         var moviesRaw = await baseQuery
             .Where(l => l.MovieTitle != null && l.MovieTitle != "")
             .GroupBy(l => l.MovieTitle)
-            .Select(g => new MovieRawDto {
+            .Select(g => new MovieRawDto
+            {
                 Title = g.Key,
                 Tmdb = g.Max(l => l.TmdbId),
                 Kp = g.Max(l => l.KpId),
@@ -316,10 +320,19 @@ public class TelemetryController : BaseController
 
         var movies = MapMovies(moviesRaw);
 
-        return new JsonResult(new {
+        return new JsonResult(new
+        {
             success = true,
-            data = new {
-                totalRequests, firstSeen, lastSeen, ips, userAgents, balancers, timeline, movies
+            data = new
+            {
+                totalRequests,
+                firstSeen,
+                lastSeen,
+                ips,
+                userAgents,
+                balancers,
+                timeline,
+                movies
             }
         });
     }
@@ -358,7 +371,8 @@ public class TelemetryController : BaseController
         var moviesRaw = await baseQuery
             .Where(l => l.MovieTitle != null && l.MovieTitle != "")
             .GroupBy(l => l.MovieTitle)
-            .Select(g => new MovieRawDto {
+            .Select(g => new MovieRawDto
+            {
                 Title = g.Key,
                 Tmdb = g.Max(l => l.TmdbId),
                 Kp = g.Max(l => l.KpId),
@@ -372,10 +386,19 @@ public class TelemetryController : BaseController
 
         var movies = MapMovies(moviesRaw);
 
-        return new JsonResult(new {
+        return new JsonResult(new
+        {
             success = true,
-            data = new {
-                totalRequests, firstSeen, lastSeen, uids, userAgents, balancers, timeline, movies
+            data = new
+            {
+                totalRequests,
+                firstSeen,
+                lastSeen,
+                uids,
+                userAgents,
+                balancers,
+                timeline,
+                movies
             }
         });
     }
@@ -383,9 +406,11 @@ public class TelemetryController : BaseController
     [HttpGet("api/settings")]
     public IActionResult GetSettings()
     {
-        return new JsonResult(new {
+        return new JsonResult(new
+        {
             success = true,
-            data = new {
+            data = new
+            {
                 prefixes = string.Join("\n", RequestListener.SkipPrefixes),
                 extensions = string.Join("\n", RequestListener.SkipExtensions),
                 regexes = string.Join("\n", RequestListener.RegexFilters),
@@ -455,7 +480,8 @@ public class TelemetryController : BaseController
         var moviesRaw = await baseQuery
             .Where(l => l.MovieTitle != null && l.MovieTitle != "")
             .GroupBy(l => l.MovieTitle)
-            .Select(g => new MovieRawDto {
+            .Select(g => new MovieRawDto
+            {
                 Title = g.Key,
                 Tmdb = g.Max(l => l.TmdbId),
                 Kp = g.Max(l => l.KpId),
@@ -496,7 +522,8 @@ public class TelemetryController : BaseController
             .OrderByDescending(l => l.Id)
             .Take(50000)
             .GroupJoin(db.Users, l => l.UnfoId, u => u.Id, (l, users) => new { Log = l, Users = users })
-            .SelectMany(x => x.Users.DefaultIfEmpty(), (x, u) => new {
+            .SelectMany(x => x.Users.DefaultIfEmpty(), (x, u) => new
+            {
                 time = x.Log.Time,
                 uri = x.Log.Uri,
                 uid = x.Log.Uid,

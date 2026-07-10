@@ -28,51 +28,72 @@ public partial class GStask
 
     bool SeekClockTime(ulong seekNs)
     {
+        CancellationTokenSource watchCts = null;
+
         if (IsDead || !statePlaying)
             return false;
 
         if (seekNs > long.MaxValue)
             return false;
 
-        if (pipeline != null)
-            DisposePipeline();
-
-        if (IsDead)
-            return false;
-
         try
         {
-            string pipelineArgs = CreatePipelineArgs(probe);
-            pipeline = (Pipeline)Gst.Functions.ParseLaunch(pipelineArgs);
-            bus = pipeline.GetBus();
+            bool reusePipeline = pipeline != null;
 
-            bin = pipeline;
-            sink = (GstApp.AppSink)bin.GetByName("out");
-
-            if (bus == null || sink == null)
+            if (reusePipeline)
             {
-                LogTaskError(
-                    "SeekClockTime",
-                    "Pipeline was created without bus or output appsink.",
-                    seekNs: seekNs
-                );
+                lock (pipelineLock)
+                {
+                    if (Volatile.Read(ref pipelineStopping) != 0 ||
+                        pipeline == null ||
+                        bus == null ||
+                        sink == null)
+                    {
+                        return false;
+                    }
 
-                Dispose();
-                return false;
+                    Interlocked.Increment(ref pipelineGeneration);
+                    watchCts = StopBusWatch();
+                    CancelSegmentPrefetch();
+                }
+
+                ensureSegmentIdle.Wait();
+                busWatchIdle.Wait();
             }
-
-            subsSinks.Clear();
-
-            foreach (var track in subtitleTracks)
+            else
             {
-                var subSink = (GstApp.AppSink)bin.GetByName($"subs_{track.Index}");
-                if (subSink != null)
-                    subsSinks[track.Index] = subSink;
+                string pipelineArgs = CreatePipelineArgs(probe);
+                pipeline = (Pipeline)Gst.Functions.ParseLaunch(pipelineArgs);
+                bus = pipeline.GetBus();
+
+                bin = pipeline;
+                sink = (GstApp.AppSink)bin.GetByName("out");
+
+                if (bus == null || sink == null)
+                {
+                    LogTaskError(
+                        "SeekClockTime",
+                        "Pipeline was created without bus or output appsink.",
+                        seekNs: seekNs
+                    );
+
+                    Dispose();
+                    return false;
+                }
+
+                subsSinks.Clear();
+
+                foreach (var track in subtitleTracks)
+                {
+                    var subSink = (GstApp.AppSink)bin.GetByName($"subs_{track.Index}");
+                    if (subSink != null)
+                        subsSinks[track.Index] = subSink;
+                }
             }
 
             StateChangeReturn ret;
 
-            if (seekNs > 0)
+            if (reusePipeline || seekNs > 0)
             {
                 ret = pipeline.SetState(State.Paused);
                 if (ret == StateChangeReturn.Failure)
@@ -112,12 +133,34 @@ public partial class GStask
                     }
                 }
 
+                if (reusePipeline)
+                {
+                    // appsink снимает backpressure до сброса timeline mp4mux.
+                    using var mux = bin?.GetByName("mux");
+                    if (mux == null ||
+                        sink.SetState(State.Ready) == StateChangeReturn.Failure ||
+                        mux.SetState(State.Ready) == StateChangeReturn.Failure ||
+                        sink.SetState(State.Paused) == StateChangeReturn.Failure ||
+                        mux.SetState(State.Paused) == StateChangeReturn.Failure)
+                    {
+                        LogTaskError(
+                            "SeekClockTime",
+                            "Unable to reset mp4mux before reusing pipeline.",
+                            seekNs: seekNs
+                        );
+
+                        Dispose();
+                        return false;
+                    }
+                }
+
                 mp4Reader.SeekReset(seekNs);
 
                 Volatile.Write(ref positionSeconds, seekNs);
                 Volatile.Write(ref positionSeekSeconds, seekNs);
 
                 InstallVideoStartProbe(seekNs);
+                InstallVideoSegmentClipProbe();
 
                 bool ok = pipeline.SeekSimple(
                     Format.Time,
@@ -223,6 +266,10 @@ public partial class GStask
 
             Dispose();
             return false;
+        }
+        finally
+        {
+            watchCts?.Dispose();
         }
     }
     #endregion

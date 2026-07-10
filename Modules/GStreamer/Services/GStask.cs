@@ -475,6 +475,7 @@ public partial class GStask
                     return;
 
                 RemoveVideoStartProbe();
+                RemoveVideoSegmentClipProbe();
 
                 try
                 {

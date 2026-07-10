@@ -1,19 +1,20 @@
 ﻿using Gst;
 using System;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace GStreamer.Services;
 
 public partial class GStask
 {
-    [DllImport("libgstreamer-1.0-0.dll", CallingConvention = CallingConvention.Cdecl)]
-    static extern void gst_event_copy_segment(IntPtr raw, IntPtr segment);
-
     Pad videoStartProbePad;
     ulong videoStartProbeId;
     Gst.PadProbeCallback videoStartProbeCallback;
     ulong videoStartProbeRequestedSeconds;
+
+    Pad videoSegmentClipProbePad;
+    ulong videoSegmentClipProbeId;
+    Gst.PadProbeCallback videoSegmentClipProbeCallback;
+    ulong videoSegmentStart = ulong.MaxValue;
 
     void InstallVideoStartProbe(ulong requestedNs)
     {
@@ -63,6 +64,92 @@ public partial class GStask
         videoStartProbeRequestedSeconds = 0;
     }
 
+    void InstallVideoSegmentClipProbe()
+    {
+        RemoveVideoSegmentClipProbe();
+
+        bool passthroughH264 = probe.IsH264 && !conf.transcodeH264;
+        bool passthroughH265 = probe.IsH265 && !conf.transcodeH265;
+
+        if (!passthroughH264 && !passthroughH265)
+            return;
+
+        using var timestamper = bin?.GetByName("video_timestamper");
+        videoSegmentClipProbePad = timestamper?.GetStaticPad("src");
+
+        if (videoSegmentClipProbePad == null)
+            return;
+
+        videoSegmentClipProbeCallback = OnVideoSegmentClipProbe;
+        videoSegmentClipProbeId = videoSegmentClipProbePad.AddProbe(
+            PadProbeType.EventDownstream | PadProbeType.Buffer,
+            videoSegmentClipProbeCallback
+        );
+    }
+
+    void RemoveVideoSegmentClipProbe()
+    {
+        if (videoSegmentClipProbePad != null && videoSegmentClipProbeId != 0)
+        {
+            try
+            {
+                videoSegmentClipProbePad.RemoveProbe(videoSegmentClipProbeId);
+            }
+            catch { }
+        }
+
+        videoSegmentClipProbeId = 0;
+        videoSegmentClipProbeCallback = null;
+        videoSegmentStart = ulong.MaxValue;
+
+        try
+        {
+            videoSegmentClipProbePad?.Dispose();
+        }
+        catch { }
+
+        videoSegmentClipProbePad = null;
+    }
+
+    PadProbeReturn OnVideoSegmentClipProbe(Pad pad, PadProbeInfo info)
+    {
+        if ((info.Type & PadProbeType.EventDownstream) != 0)
+        {
+            using var ev = info.GetEvent();
+
+            if (ev?.Type == EventType.FlushStart)
+            {
+                videoSegmentStart = ulong.MaxValue;
+            }
+            else if (TryGetTimeSegment(
+                ev,
+                out ulong segmentStart,
+                out _
+            ))
+            {
+                videoSegmentStart = segmentStart;
+            }
+
+            return PadProbeReturn.Ok;
+        }
+
+        if ((info.Type & PadProbeType.Buffer) == 0)
+            return PadProbeReturn.Ok;
+
+        using var buffer = info.GetBuffer();
+        if (buffer == null)
+            return PadProbeReturn.Ok;
+
+        ulong pts = buffer.Handle.GetPts();
+
+        if (videoSegmentStart == ulong.MaxValue)
+            return PadProbeReturn.Ok;
+
+        return pts != ulong.MaxValue && pts < videoSegmentStart
+            ? PadProbeReturn.Drop
+            : PadProbeReturn.Ok;
+    }
+
     PadProbeReturn OnVideoStartProbe(Pad pad, PadProbeInfo info)
     {
         if ((info.Type & PadProbeType.EventDownstream) != 0)
@@ -99,18 +186,10 @@ public partial class GStask
     {
         clockTime = 0;
 
-        if (ev == null || ev.Type != EventType.Segment)
+        if (!TryGetTimeSegment(ev, out ulong start, out ulong time))
             return false;
 
-        if (!TryCopySegment(ev, out Gst.Segment segment))
-            return false;
-
-        if (segment.Format != Format.Time)
-            return false;
-
-        clockTime = segment.Time != ulong.MaxValue
-            ? segment.Time
-            : segment.Start;
+        clockTime = time != ulong.MaxValue ? time : start;
 
         return clockTime != ulong.MaxValue;
     }
@@ -155,36 +234,35 @@ public partial class GStask
         mp4Reader.SetTimelineOffsetNs(clockTime);
     }
 
-    static bool TryCopySegment(Event ev, out Gst.Segment segment)
+    static bool TryGetTimeSegment(
+        Event ev,
+        out ulong start,
+        out ulong time
+    )
     {
-        segment = default;
+        start = ulong.MaxValue;
+        time = ulong.MaxValue;
 
-        if (ev == null)
+        if (ev == null || ev.Type != EventType.Segment)
             return false;
-
-        IntPtr nativeSegment = IntPtr.Zero;
 
         try
         {
-            nativeSegment = Marshal.AllocHGlobal(Marshal.SizeOf<Gst.Segment>());
+            using var segment = Gst.Segment.New();
+            ev.CopySegment(segment);
 
-            gst_event_copy_segment(
-                ev.Handle.DangerousGetHandle(),
-                nativeSegment
-            );
+            if (segment.Format != Format.Time)
+                return false;
 
-            segment = Marshal.PtrToStructure<Gst.Segment>(nativeSegment);
+            start = segment.Start;
+            time = segment.Time;
             return true;
         }
         catch
         {
-            segment = default;
+            start = ulong.MaxValue;
+            time = ulong.MaxValue;
             return false;
-        }
-        finally
-        {
-            if (nativeSegment != IntPtr.Zero)
-                Marshal.FreeHGlobal(nativeSegment);
         }
     }
 }

@@ -80,7 +80,8 @@ public partial class GStask
             mq.src_0 !
             h264parse
                 config-interval=0 !
-            h264timestamper !
+            h264timestamper
+                name=video_timestamper !
             video/x-h264,
                 stream-format=avc,
                 alignment=au !
@@ -93,7 +94,8 @@ public partial class GStask
             mq.src_0 !
             h265parse
                 config-interval=0 !
-            h265timestamper !
+            h265timestamper
+                name=video_timestamper !
             video/x-h265,
                 stream-format=hvc1,
                 alignment=au !

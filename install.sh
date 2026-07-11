@@ -22,7 +22,7 @@ readonly GITHUB_REPO="${LAMPAC_GITHUB_REPO:-lampac-nextgen/lampac}"
 readonly RELEASE_ZIP_NAME="lampac-nextgen.zip"
 readonly DOTNET_INSTALL_DIR="${LAMPAC_DOTNET_ROOT:-/usr/share/dotnet}"
 readonly DOTNET_CHANNEL="${LAMPAC_DOTNET_CHANNEL:-10.0}"
-readonly CHROMIUM_VERSION="${LAMPAC_CHROMIUM_VERSION:-149}"
+readonly CHROMIUM_VERSION="${LAMPAC_CHROMIUM_VERSION:-149.0.7827.196-1~deb13u1}"
 readonly LISTEN_PORT="${LAMPAC_PORT:-9118}"
 # Имя скрипта — исключается из синхронизации при обновлении
 readonly UPDATE_SCRIPT_NAME="install.sh"
@@ -182,7 +182,7 @@ usage() {
     "$C_CYAN" "$C_RESET" "$C_DIM" "$C_RESET"
   printf '  %sLAMPAC_PORT%s          HTTP port hint                  %s(default: %s)%s\n' \
     "$C_CYAN" "$C_RESET" "$C_DIM" "$LISTEN_PORT" "$C_RESET"
-  printf '  %sLAMPAC_CHROMIUM_VERSION%s  Chromium major version pin  %s(default: %s)%s\n' \
+  printf '  %sLAMPAC_CHROMIUM_VERSION%s  Chromium package version      %s(default: %s)%s\n' \
     "$C_CYAN" "$C_RESET" "$C_DIM" "$CHROMIUM_VERSION" "$C_RESET"
   printf '  %sLAMPAC_CONFIRM_REMOVE%s  Set to 1 to skip the %s--remove%s confirmation prompt %s(non-interactive)%s\n' \
     "$C_CYAN" "$C_RESET" "$C_GREEN" "$C_RESET" "$C_DIM" "$C_RESET"
@@ -307,15 +307,34 @@ pick_libicu_package() {
   exit 1
 }
 
-pick_chromium_package_version() {
-  local ver
-  ver=$(apt-cache madison chromium 2>/dev/null | awk -v m="${CHROMIUM_VERSION}." '$3 ~ "^"m { print $3; exit }')
-  if [[ -z "$ver" ]]; then
-    log_err "Chromium ${CHROMIUM_VERSION}.x not found in apt repositories."
-    apt-cache madison chromium 2>/dev/null | head -5 >&2 || true
-    exit 1
-  fi
-  echo "$ver"
+install_chromium_pinned() {
+  local deb_arch pkg tmp_dir
+  case "$(uname -m)" in
+    x86_64) deb_arch=amd64 ;;
+    aarch64|arm64) deb_arch=arm64 ;;
+    *)
+      log_err "Unsupported architecture for Chromium install: $(uname -m)"
+      exit 1
+      ;;
+  esac
+
+  tmp_dir="$(mktemp -d /tmp/lampac-chromium.XXXXXX)"
+  CLEANUP_PATHS+=("$tmp_dir")
+
+  run_quiet "Installing Chromium ${CHROMIUM_VERSION}" bash -c '
+    set -euo pipefail
+    base="https://snapshot.debian.org/archive/debian-security/20260625T165532Z/pool/updates/main/c/chromium"
+    tmp_dir="$1"
+    version="$2"
+    arch="$3"
+    cd "$tmp_dir"
+    for pkg in chromium chromium-common chromium-sandbox; do
+      curl -fSL -o "${pkg}.deb" "${base}/${pkg}_${version}_${arch}.deb"
+    done
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ./*.deb
+  ' bash "$tmp_dir" "$CHROMIUM_VERSION" "$deb_arch"
+
+  apt-mark hold chromium >/dev/null 2>&1 || true
 }
 
 is_ubuntu() {
@@ -345,19 +364,23 @@ install_os_packages() {
       apt-get update
   fi
 
-  local icu_pkg chromium_pkg
+  local icu_pkg
   icu_pkg="$(pick_libicu_package)"
-  chromium_pkg="$(pick_chromium_package_version)"
 
-  run_quiet "Installing system packages (chromium=${chromium_pkg}, curl, fonts, GStreamer, ICU, ImageMagick, unzip)" \
+  run_quiet "Installing prerequisites (ca-certificates, curl)" \
     env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      ca-certificates curl "chromium=${chromium_pkg}" fontconfig \
+      ca-certificates curl
+
+  install_chromium_pinned
+
+  run_quiet "Installing system packages (fonts, GStreamer, ICU, ImageMagick, unzip)" \
+    env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      fontconfig \
       gstreamer1.0-libav gstreamer1.0-plugins-bad gstreamer1.0-plugins-base \
       gstreamer1.0-plugins-base-apps gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly \
       gstreamer1.0-tools \
       imagemagick libgstreamer-plugins-base1.0-0 libgstreamer1.0-0 \
       libjpeg-dev libnspr4 libpng-dev libwebp-dev unzip "$icu_pkg"
-  apt-mark hold chromium >/dev/null 2>&1 || true
   apt-get clean -qq 2>/dev/null || true
   rm -rf /var/lib/apt/lists/*
 }

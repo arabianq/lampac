@@ -4,7 +4,7 @@
 # Global ARGs
 ARG DOTNET_VERSION=10.0.9
 ARG DOTNET_SDK_VERSION=10.0.301
-ARG CHROMIUM_VERSION=149
+ARG CHROMIUM_VERSION=149.0.7827.196-1~deb13u1
 
 # Builder image — platform set by buildx
 FROM --platform=$BUILDPLATFORM debian:13-slim AS builder
@@ -97,15 +97,15 @@ EXPOSE 9118
 
 # Runtime dependencies
 RUN apt-get update \
-    && CHROMIUM_PKG="$(apt-cache madison chromium | awk -v v="${CHROMIUM_VERSION}." '$3 ~ "^" v { print $3; exit }')" \
-    && if [ -z "$CHROMIUM_PKG" ]; then \
-    echo "Chromium ${CHROMIUM_VERSION}.x not found in apt; available:" >&2; \
-    apt-cache madison chromium | head -5 >&2; \
-    exit 1; \
-    fi \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && mkdir -p /tmp/chromium && cd /tmp/chromium \
+    && BASE="https://snapshot.debian.org/archive/debian-security/20260625T165532Z/pool/updates/main/c/chromium" \
+    && for pkg in chromium chromium-common chromium-sandbox; do \
+    curl -fSL -o "${pkg}.deb" "${BASE}/${pkg}_${CHROMIUM_VERSION}_${TARGETARCH}.deb"; \
+    done \
+    && apt-get install -y --no-install-recommends ./*.deb \
+    && rm -rf /tmp/chromium \
     && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    chromium="${CHROMIUM_PKG}" \
     curl \
     fontconfig \
     gstreamer1.0-libav \

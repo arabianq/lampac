@@ -54,6 +54,8 @@ public partial class GStask
             name=mq
             use-buffering=false
             max-size-buffers=5
+            max-size-bytes=0
+            max-size-time=0
         """);
     }
 

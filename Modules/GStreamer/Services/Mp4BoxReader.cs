@@ -371,9 +371,7 @@ public sealed class Mp4BoxReader : IDisposable
         if (videoCount > 0 && audioCount > 0)
         {
             ulong videoEnd = _video[videoCount - 1].EndTime;
-
-            if (TryPrepareAudioForVideoEnd(videoEnd, out int selectedAudioCount))
-                audioCount = selectedAudioCount;
+            TryPrepareAudioForVideoEnd(videoEnd, out audioCount);
         }
 
         BuildSegment(
@@ -1716,6 +1714,14 @@ public sealed class Mp4BoxReader : IDisposable
             ? sampleDescriptionIndex
             : trex.DescriptionIndex;
 
+        if (effectiveSampleDescriptionIndex == 0)
+        {
+            error =
+                $"sample_description_index is zero for track_ID={trackId}";
+
+            return false;
+        }
+
         if (defaultDuration == 0)
             defaultDuration = trex.Duration;
 
@@ -1725,11 +1731,15 @@ public sealed class Mp4BoxReader : IDisposable
         if (!hasDefaultFlags)
             defaultFlags = trex.Flags;
 
+        uint sampleDescriptionIndexOverride =
+            hasSampleDescriptionIndex &&
+            sampleDescriptionIndex != trex.DescriptionIndex
+                ? sampleDescriptionIndex
+                : 0;
+
         byte[] tfhd = BuildCanonicalTfhd(
             trackId,
-            hasSampleDescriptionIndex && sampleDescriptionIndex != trex.DescriptionIndex
-                ? sampleDescriptionIndex
-                : 0
+            sampleDescriptionIndexOverride
         );
 
         var result = new Fragment
@@ -1775,6 +1785,7 @@ public sealed class Mp4BoxReader : IDisposable
 
         if (result.Runs.Count == 0 || duration == 0)
         {
+            result.Dispose();
             error = "trun/duration was not found";
             return false;
         }
@@ -2210,16 +2221,36 @@ public sealed class Mp4BoxReader : IDisposable
             return false;
         }
 
+        if (!TryFindTrex(
+            trex,
+            videoId,
+            out Trex videoTrex,
+            out error
+        ))
+        {
+            return false;
+        }
+
+        if (!TryFindTrex(
+            trex,
+            audioId,
+            out Trex audioTrex,
+            out error
+        ))
+        {
+            return false;
+        }
+
         video = new TrackInfo(
             videoId,
             videoTimescale,
-            FindTrex(trex, videoId)
+            videoTrex
         );
 
         audio = new TrackInfo(
             audioId,
             audioTimescale,
-            FindTrex(trex, audioId)
+            audioTrex
         );
 
         return true;
@@ -2328,39 +2359,97 @@ public sealed class Mp4BoxReader : IDisposable
     {
         entry = default;
 
-        // FullBox(4), track_ID, description index, duration, size, flags.
-        if (box.Length < header + 24)
+        // FullBox(4), track_ID, description index, duration, size, flags
+        if (box.Length != header + 24)
+            return false;
+
+        uint versionFlags = BinaryPrimitives.ReadUInt32BigEndian(
+            box.Slice(header, 4)
+        );
+
+        // trex version 0, flags 0.
+        if (versionFlags != 0)
             return false;
 
         uint trackId = BinaryPrimitives.ReadUInt32BigEndian(
             box.Slice(header + 4, 4)
         );
 
-        if (trackId == 0)
+        uint descriptionIndex = BinaryPrimitives.ReadUInt32BigEndian(
+            box.Slice(header + 8, 4)
+        );
+
+        uint duration = BinaryPrimitives.ReadUInt32BigEndian(
+            box.Slice(header + 12, 4)
+        );
+
+        uint size = BinaryPrimitives.ReadUInt32BigEndian(
+            box.Slice(header + 16, 4)
+        );
+
+        uint flags = BinaryPrimitives.ReadUInt32BigEndian(
+            box.Slice(header + 20, 4)
+        );
+
+        if (trackId == 0 || descriptionIndex == 0)
             return false;
 
         entry = new TrexEntry(
             trackId,
             new Trex(
-                BinaryPrimitives.ReadUInt32BigEndian(box.Slice(header + 8, 4)),
-                BinaryPrimitives.ReadUInt32BigEndian(box.Slice(header + 12, 4)),
-                BinaryPrimitives.ReadUInt32BigEndian(box.Slice(header + 16, 4)),
-                BinaryPrimitives.ReadUInt32BigEndian(box.Slice(header + 20, 4))
+                descriptionIndex,
+                duration,
+                size,
+                flags
             )
         );
 
         return true;
     }
 
-    static Trex FindTrex(List<TrexEntry> entries, uint trackId)
+    static bool TryFindTrex(
+        List<TrexEntry> entries,
+        uint trackId,
+        out Trex value,
+        out string error
+    )
     {
+        value = default;
+        error = null;
+
+        bool found = false;
+
         foreach (TrexEntry entry in entries)
         {
-            if (entry.TrackId == trackId)
-                return entry.Value;
+            if (entry.TrackId != trackId)
+                continue;
+
+            if (found)
+            {
+                error = $"duplicate trex for track_ID={trackId}";
+                return false;
+            }
+
+            value = entry.Value;
+            found = true;
         }
 
-        return default;
+        if (!found)
+        {
+            error = $"trex was not found for track_ID={trackId}";
+            return false;
+        }
+
+        if (value.DescriptionIndex == 0)
+        {
+            error =
+                $"trex.default_sample_description_index is zero " +
+                $"for track_ID={trackId}";
+
+            return false;
+        }
+
+        return true;
     }
 
     static bool FindBox(

@@ -16,11 +16,27 @@ internal static class HdrToneMappingBackend
 
     public static bool IsAvailable => available.Value;
 
+    public static void Initialize()
+    {
+        if (IsAvailable)
+        {
+            Serilog.Log.Information(
+                "GStreamer HDR tone mapping backend initialized with automatic OpenCL/CPU selection."
+            );
+        }
+        else
+        {
+            Serilog.Log.Information(
+                "GStreamer HDR tone mapping backend is unavailable; HDR-to-SDR requests will be rejected."
+            );
+        }
+    }
+
     static bool Probe()
     {
         try
         {
-            if (HasFactory())
+            if (CanCreateElement())
                 return true;
 
             string runtimeId = GetRuntimeId();
@@ -42,7 +58,7 @@ internal static class HdrToneMappingBackend
                     Registry.Get().ScanPath(pluginDirectory);
             }
 
-            return HasFactory();
+            return CanCreateElement();
         }
         catch
         {
@@ -54,6 +70,15 @@ internal static class HdrToneMappingBackend
     {
         using ElementFactory factory = ElementFactory.Find(ElementName);
         return factory != null;
+    }
+
+    static bool CanCreateElement()
+    {
+        if (!HasFactory())
+            return false;
+
+        using Element element = ElementFactory.Make(ElementName, "hdrtonemap_startup_probe");
+        return element != null;
     }
 
     static string GetRuntimeId()

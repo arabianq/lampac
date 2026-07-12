@@ -39,6 +39,8 @@ http://IP:9118/gst.js
 | `transcodeVP8` | `false` | Разрешить VP8 и перекодировать его в H.264. |
 | `transcodeAVI` | `false` | Разрешить контейнер AVI и перекодировать его видео в H.264. |
 | `hdr_to_sdr` | `false` | Запросить HDR-to-SDR tone mapping только для обнаруженного HDR-видео. |
+| `hardwareAcceleration` | `true` | Использовать проверенный при старте аппаратный H.264 encoder; при `false` используется `x264enc`. |
+| `useGpu` | `true` | Использовать добавленные модулем GPU-бэкенды и выполнять их стартовые проверки; при `false` используются `x264enc` и CPU HDR tone mapping. На автоматический выбор декодера самим GStreamer не влияет. |
 
 Полный пример:
 
@@ -66,11 +68,14 @@ http://IP:9118/gst.js
   "transcodeVP9": false,
   "transcodeVP8": false,
   "transcodeAVI": false,
-  "hdr_to_sdr": false
+  "hdr_to_sdr": false,
+  "hardwareAcceleration": true,
+  "useGpu": true
 }
 ```
 
 В этом примере H.264, H.265, AV1 и VP9 передаётся без перекодирования. Доступ разрешён только двум указанным UID.
+`hardwareAcceleration` применяется только когда видео действительно перекодируется. `useGpu: false` не запрещает самому GStreamer выбрать аппаратный декодер.
 
 ### Настройки для отдельных UID
 
@@ -160,6 +165,6 @@ https://gstreamer.freedesktop.org/download/#macos
 
 ### HDR metadata и tone mapping
 
-`hdr_to_sdr` по умолчанию выключен. SDR-вход никогда не направляется в tone-mapping ветку. Для PQ/HLG используется native-элемент `hdrtonemap`: `zscale` переводит BT.2020 в линейный свет, Hable сжимает динамический диапазон, затем `zscale` формирует SDR BT.709 `I420` перед `x264enc`. При отсутствии элемента возвращается ошибка `HDR tone mapping backend is not available`, без некорректной подмены через `videoconvert`.
+`hdr_to_sdr` по умолчанию выключен. SDR-вход никогда не направляется в tone-mapping ветку. Для PQ/HLG используется native-элемент `hdrtonemap`. При `useGpu: true` и наличии OpenCL GPU он выполняет Hable tone mapping через `tonemap_opencl`; при отсутствии GPU или ошибке обработки автоматически используется прежний CPU-граф `zscale + Hable + zscale`. При `useGpu: false` CPU-граф выбирается сразу, без OpenCL probe. Оба backend формируют SDR BT.709 `I420` перед H.264 encoder. При отсутствии самого элемента возвращается ошибка `HDR tone mapping backend is not available`, без некорректной подмены через `videoconvert`.
 
 Исходники и инструкции сборки находятся в [`native`](native/README.md). Windows-сборка статически включает FFmpeg/zimg в plugin; Linux-сборка использует системные shared libraries. Dolby Vision поддерживается только при наличии распознаваемого PQ/HLG base layer; динамические RPU metadata Hable не применяет.

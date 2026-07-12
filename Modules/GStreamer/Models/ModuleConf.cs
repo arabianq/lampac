@@ -85,6 +85,9 @@ public class ModuleConf : ModuleBaseConf
     /// <summary>Use a hardware H.264 backend after a successful startup probe.</summary>
     public bool hardwareAcceleration { get; set; } = true;
 
+    /// <summary>Enable GPU backends added by this module. GStreamer decodebin remains automatic.</summary>
+    public bool useGpu { get; set; } = true;
+
     /// <summary>
     /// 14 Мбит/c
     /// </summary>

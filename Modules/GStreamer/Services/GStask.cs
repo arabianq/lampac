@@ -116,7 +116,7 @@ public partial class GStask
         }
         finally
         {
-            segment.data?.Dispose();
+            mp4Reader.ResetSegment();
         }
     }
     #endregion

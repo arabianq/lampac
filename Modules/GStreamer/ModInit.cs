@@ -51,7 +51,11 @@ public class ModInit : IModuleLoaded
             conf.gst_version = gstVersion.Value;
 
         InitGst();
-        HardwareVideoBackend.Initialize();
+        if (conf.useGpu)
+        {
+            HardwareVideoBackend.Initialize();
+            HdrToneMappingBackend.Initialize();
+        }
     }
 
     public void Dispose()

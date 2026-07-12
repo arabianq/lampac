@@ -131,10 +131,11 @@ public partial class GStask
     {
         int segmentSeconds = Math.Max(1, conf.segment_seconds);
         bool toneMapHdr = conf.hdr_to_sdr && probe.Video?.IsHdr == true;
+        string useOpenCl = conf.useGpu ? "true" : "false";
         string videoFilter = toneMapHdr
             ? probe.Video.VideoTransfer == VideoTransfer.Hlg
-                ? "hdrtonemap transfer=hlg"
-                : "hdrtonemap transfer=pq"
+                ? $"hdrtonemap transfer=hlg use-opencl={useOpenCl}"
+                : $"hdrtonemap transfer=pq use-opencl={useOpenCl}"
             : null;
 
         int frameRateNum = probe.Video?.FrameRateNum ?? 0;
@@ -144,7 +145,11 @@ public partial class GStask
             ? Math.Max(1, (int)Math.Round((double)frameRateNum * segmentSeconds / frameRateDen))
             : 25 * segmentSeconds;
 
-        string encoderPipeline = conf.hardwareAcceleration
+        bool useHardwareEncoder = conf.useGpu && conf.hardwareAcceleration;
+        if (useHardwareEncoder)
+            HardwareVideoBackend.Initialize();
+
+        string encoderPipeline = useHardwareEncoder
             ? HardwareVideoBackend.CreateH264Pipeline(
                 probe.Video?.Width ?? 0,
                 probe.Video?.Height ?? 0,

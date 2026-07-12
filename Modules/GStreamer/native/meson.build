@@ -14,7 +14,7 @@ zimg_dep = dependency('zimg', static: static_ffmpeg)
 
 plugin_deps = [avfilter_dep, avutil_dep, swscale_dep, zimg_dep,
   gst_dep, gst_base_dep, gst_video_dep]
-if static_ffmpeg and host_machine.system() == 'windows'
+if static_ffmpeg
   plugin_deps += cc.find_library('OpenCL', required: true)
 endif
 

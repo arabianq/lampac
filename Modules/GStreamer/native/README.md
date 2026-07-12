@@ -24,13 +24,25 @@ format (yuv420p)
 
 ## Linux
 
-Install Meson, Ninja, a C compiler, GStreamer development packages, and development packages for `libavfilter`, `libavutil`, `libswscale`, and `zimg`. The CPU fallback requires the `zscale`, `tonemap`, `format`, `buffer`, and `buffersink` filters. OpenCL acceleration is enabled when the system FFmpeg also exposes `hwupload`, `hwdownload`, and `tonemap_opencl` and an OpenCL GPU is available.
+The ready x64 plugin is stored at `runtimes/linux-x64/native/gstreamer-1.0/libgsthdrtonemap.so`. It requires glibc 2.35 or newer and GStreamer 1.20 or newer, and was tested on Ubuntu 22.04 and Debian 12. FFmpeg 8.0.3 and zimg 3.0.6 are linked statically, so users do not need FFmpeg/zimg development packages or a local build. The only additional runtime dependency beyond the documented GStreamer packages is the OpenCL loader:
 
 ```bash
+apt-get install -y --no-install-recommends ocl-icd-libopencl1
+```
+
+The vendor OpenCL implementation comes from the installed GPU driver. If no OpenCL device is available, the same plugin automatically uses its embedded CPU graph.
+
+To rebuild the plugin, install Meson, Ninja, a C/C++ compiler, Autotools, NASM/Yasm, GStreamer development packages, and OpenCL headers/loader development files. Provide unpacked zimg and FFmpeg source directories:
+
+```bash
+export ZIMG_SOURCE=/path/to/zimg-3.0.6
+export FFMPEG_SOURCE=/path/to/ffmpeg-8.0.3
+export DEPS_PREFIX=/tmp/gst-hdrtonemap-deps
+export BUILD_DIR=/tmp/gst-hdrtonemap-build
 ./build-linux.sh
 ```
 
-The script builds a dynamically linked plugin and copies it to `runtimes/linux-<arch>/native/gstreamer-1.0`.
+The script builds position-independent static zimg and the required CPU/OpenCL FFmpeg filters, links them into the plugin, rejects accidental dynamic FFmpeg/zimg dependencies, and copies the stripped result to `runtimes/linux-<arch>/native/gstreamer-1.0`.
 
 ## Windows
 

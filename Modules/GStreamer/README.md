@@ -115,8 +115,11 @@ apt-get install -y --no-install-recommends \
     gstreamer1.0-plugins-ugly \
     gstreamer1.0-libav \
     gstreamer1.0-tools \
+    ocl-icd-libopencl1 \
     ca-certificates
 ```
+
+Для `linux-x64` готовый `libgsthdrtonemap.so` уже включён в модуль. Он требует glibc 2.35+ и GStreamer 1.20+ и проверен на Ubuntu 22.04 и Debian 12. Компилятор, FFmpeg/zimg development packages и запуск `build-linux.sh` пользователю не нужны. `ocl-icd-libopencl1` предоставляет OpenCL loader; реализацию OpenCL для конкретного GPU устанавливает драйвер. Без GPU tone mapping автоматически использует CPU fallback.
 
 Проверка версии:
 
@@ -167,4 +170,4 @@ https://gstreamer.freedesktop.org/download/#macos
 
 `hdr_to_sdr` по умолчанию выключен. SDR-вход никогда не направляется в tone-mapping ветку. Для PQ/HLG используется native-элемент `hdrtonemap`. При `useGpu: true` и наличии OpenCL GPU он выполняет Hable tone mapping через `tonemap_opencl`; при отсутствии GPU или ошибке обработки автоматически используется прежний CPU-граф `zscale + Hable + zscale`. При `useGpu: false` CPU-граф выбирается сразу, без OpenCL probe. Оба backend формируют SDR BT.709 `I420` перед H.264 encoder. При отсутствии самого элемента возвращается ошибка `HDR tone mapping backend is not available`, без некорректной подмены через `videoconvert`.
 
-Исходники и инструкции сборки находятся в [`native`](native/README.md). Windows-сборка статически включает FFmpeg/zimg в plugin; Linux-сборка использует системные shared libraries. Dolby Vision поддерживается только при наличии распознаваемого PQ/HLG base layer; динамические RPU metadata Hable не применяет.
+Исходники и инструкции сборки находятся в [`native`](native/README.md). Windows и Linux x64 сборки статически включают FFmpeg/zimg в plugin и не зависят от версии системных FFmpeg libraries. Dolby Vision поддерживается только при наличии распознаваемого PQ/HLG base layer; динамические RPU metadata Hable не применяет.

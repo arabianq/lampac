@@ -383,19 +383,30 @@ public class GStreamerController : BaseController
     #region init.mp4
     [AllowAnonymous]
     [HttpGet("/gst/{id}/init.mp4")]
-    public async Task<ActionResult> VideoInit(ulong id, int audio)
+    public async Task VideoInit(ulong id, int audio)
     {
         SetHeadersNoCache();
 
         var gstask = GService.Get(id);
         if (gstask == null)
-            return NotFound();
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
 
         if (!await gstask.EnsureInitAsync(audio, HttpContext.RequestAborted).ConfigureAwait(false))
-            return StatusCode(StatusCodes.Status502BadGateway);
+        {
+            Response.StatusCode = StatusCodes.Status502BadGateway;
+            return;
+        }
 
-        Response.Headers.ContentLength = gstask.initMp4.Length;
-        return File(gstask.initMp4, "video/mp4", true);
+        if (!gstask.TryOpenInitFile(out var initFile))
+        {
+            Response.StatusCode = StatusCodes.Status502BadGateway;
+            return;
+        }
+
+        await SendMp4File(initFile, HttpContext.RequestAborted);
     }
     #endregion
 
@@ -435,7 +446,7 @@ public class GStreamerController : BaseController
                 gstask.SetClientSegmentIndex(index, cacheHit: true);
                 gstask.QueueSegmentPrefetch(index);
 
-                await SendSegmentFile(
+                await SendMp4File(
                     cachedSegment,
                     HttpContext.RequestAborted
                 );
@@ -491,7 +502,7 @@ public class GStreamerController : BaseController
 
                 gstask.QueueSegmentPrefetch(index);
 
-                await SendSegmentFile(
+                await SendMp4File(
                     segmentFile,
                     HttpContext.RequestAborted
                 );
@@ -636,7 +647,7 @@ public class GStreamerController : BaseController
     #endregion
 
     #region Helpers
-    async Task SendSegmentFile(CachedSegmentFile file, CancellationToken cancellationToken)
+    async Task SendMp4File(CachedSegmentFile file, CancellationToken cancellationToken)
     {
         try
         {

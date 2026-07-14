@@ -424,7 +424,7 @@ public partial class GStask
             }
             #endregion
 
-            if (index < 0 && initMp4 != null)
+            if (index < 0 && InitMp4Ready)
                 return true;
 
             if (index >= 0 && SegmentFileReady(segmentIndex))
@@ -527,7 +527,7 @@ public partial class GStask
                 if (activeSegmentStoreFailed)
                     return false;
 
-                if (index < 0 && initMp4 != null)
+                if (index < 0 && InitMp4Ready)
                     return true;
 
                 if (index >= 0 && SegmentFileReady(segmentIndex))
@@ -592,18 +592,18 @@ public partial class GStask
     #region EnsureInitAsync
     public async System.Threading.Tasks.Task<bool> EnsureInitAsync(int audio, CancellationToken cancellationToken)
     {
-        if (initMp4 != null)
+        if (InitMp4Ready)
             return true;
 
         await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
-            if (initMp4 != null)
+            if (InitMp4Ready)
                 return true;
 
             EnsureSegment(-1, cancellationToken, audio);
-            return initMp4 != null;
+            return InitMp4Ready;
         }
         catch (OperationCanceledException)
         {
@@ -611,7 +611,7 @@ public partial class GStask
         }
         catch
         {
-            return initMp4 != null;
+            return InitMp4Ready;
         }
         finally
         {

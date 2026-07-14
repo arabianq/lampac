@@ -98,7 +98,7 @@ public sealed class Mp4BoxReader : IDisposable
 
     const ulong GstSecond = 1_000_000_000UL;
 
-    readonly Action<byte[]> _onInit;
+    readonly Action<ReadOnlyMemory<byte>> _onInit;
     readonly Action<Segment> _onSegment;
     readonly int _segmentSeconds;
     readonly int _segmentDiff;
@@ -234,7 +234,7 @@ public sealed class Mp4BoxReader : IDisposable
     }
 
     public Mp4BoxReader(
-        Action<byte[]> onInit,
+        Action<ReadOnlyMemory<byte>> onInit,
         Action<Segment> onSegment,
         int segmentSeconds,
         int segmentDiff,
@@ -809,10 +809,17 @@ public sealed class Mp4BoxReader : IDisposable
         if (!_moovDone || _init.Length == 0)
             throw new InvalidDataException("Incomplete MP4 initialization.");
 
-        byte[] init = _init.ToArray();
+        if (!_init.TryGetBuffer(out ArraySegment<byte> buffer) || buffer.Array == null)
+            throw new InvalidOperationException("MP4 init buffer is not accessible.");
+
+        var init = new ReadOnlyMemory<byte>(
+            buffer.Array,
+            buffer.Offset,
+            checked((int)_init.Length)
+        );
 
         if (!TryParseInit(
-            init,
+            init.Span,
             out _videoTrack,
             out _audioTrack,
             out string error
@@ -824,7 +831,16 @@ public sealed class Mp4BoxReader : IDisposable
         }
 
         _initDone = true;
-        _onInit(init);
+
+        try
+        {
+            _onInit(init);
+        }
+        finally
+        {
+            Reset(_init);
+            _init.Capacity = 0;
+        }
     }
 
     void CompleteMoof()

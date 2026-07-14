@@ -57,7 +57,11 @@ public partial class GStask
     readonly ManualResetEventSlim ensureSegmentIdle = new(true);
     readonly ManualResetEventSlim pipelineDisposeIdle = new(true);
 
-    public byte[] initMp4 { get; private set; }
+    long initMp4Length;
+
+    bool InitMp4Ready
+        => Volatile.Read(ref initMp4Length) > 0;
+
     public HlsVariantInfo hlsVariantInfo { get; private set; }
 
     Mp4BoxReader mp4Reader;
@@ -137,12 +141,12 @@ public partial class GStask
     #endregion
 
     #region OnInitMp4
-    void OnInitMp4(byte[] data)
+    void OnInitMp4(ReadOnlyMemory<byte> data)
     {
-        if (data == null || data.Length == 0 || initMp4 != null)
+        if (data.IsEmpty || InitMp4Ready)
             return;
 
-        HlsVariantInfo parsed = Mp4InitInfoReader.Read(data);
+        HlsVariantInfo parsed = Mp4InitInfoReader.Read(data.Span);
         if (parsed != null)
         {
             parsed.FrameRate = probe.Video?.FrameRate ?? 0;
@@ -164,8 +168,9 @@ public partial class GStask
             }
         }
 
+        StoreInitFile(data.Span);
         hlsVariantInfo = parsed;
-        initMp4 = data;
+        Volatile.Write(ref initMp4Length, data.Length);
     }
     #endregion
 
@@ -475,10 +480,11 @@ public partial class GStask
 
         DisposePipeline();
         ClearSegmentCache();
+        Volatile.Write(ref initMp4Length, 0);
+        TryDeleteFile(initMp4Path);
         segmentStartNsByIndex.Clear();
         mp4Reader?.Dispose();
         mp4Reader = null;
-        initMp4 = null;
         hlsVariantInfo = null;
     }
     #endregion

@@ -150,6 +150,7 @@ public partial class GStask
                 {
                     // appsink снимает backpressure до сброса timeline mp4mux
                     using var mux = bin?.GetByName("mux");
+                    using var videoTimestamper = bin?.GetByName("video_timestamper");
                     using var videoEncoder = IsVideoTranscoded
                         ? bin?.GetByName("video_encoder")
                         : null;
@@ -158,14 +159,18 @@ public partial class GStask
                         (IsVideoTranscoded && videoEncoder == null) ||
                         sink.SetState(State.Ready) == StateChangeReturn.Failure ||
                         mux.SetState(State.Ready) == StateChangeReturn.Failure ||
+                        (videoTimestamper != null &&
+                         videoTimestamper.SetState(State.Ready) == StateChangeReturn.Failure) ||
                         (videoEncoder != null && videoEncoder.SetState(State.Ready) == StateChangeReturn.Failure) ||
                         (videoEncoder != null && videoEncoder.SetState(State.Paused) == StateChangeReturn.Failure) ||
+                        (videoTimestamper != null &&
+                         videoTimestamper.SetState(State.Paused) == StateChangeReturn.Failure) ||
                         mux.SetState(State.Paused) == StateChangeReturn.Failure ||
                         sink.SetState(State.Paused) == StateChangeReturn.Failure)
                     {
                         LogTaskError(
                             "SeekClockTime",
-                            "Unable to reset mp4mux before reusing pipeline.",
+                            "Unable to reset mux/video state before reusing pipeline.",
                             seekNs: seekNs
                         );
 

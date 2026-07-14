@@ -2321,9 +2321,33 @@ public sealed class Mp4BoxReader : IDisposable
             result.DataSize = checked(result.DataSize + sampleSize);
         }
 
-        if (cursor != box.Length || sampleCount == 0 || result.Duration == 0 || result.DataSize == 0)
+        if (cursor != box.Length)
         {
-            error = "invalid trun body";
+            error =
+                $"invalid trun body length: parsed={cursor}, actual={box.Length}, " +
+                $"sample_count={sampleCount}, flags=0x{flags:X6}";
+            return false;
+        }
+
+        if (sampleCount == 0)
+        {
+            error = $"empty trun (flags=0x{flags:X6})";
+            return false;
+        }
+
+        if (result.Duration == 0)
+        {
+            error =
+                $"trun duration is zero (sample_count={sampleCount}, " +
+                $"flags=0x{flags:X6})";
+            return false;
+        }
+
+        if (result.DataSize == 0)
+        {
+            error =
+                $"trun data size is zero (sample_count={sampleCount}, " +
+                $"flags=0x{flags:X6})";
             return false;
         }
 

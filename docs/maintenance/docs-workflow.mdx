@@ -1,0 +1,89 @@
+---
+title: "Разработка Mintlify-документации"
+sidebarTitle: "Docs workflow"
+description: "Локально редактируйте и проверяйте документацию Lampac с Mintlify CLI, documentation skill и MCP."
+keywords: ["Mintlify", "Mintlify MCP", "mint validate", "docs.json", "Lampac docs contribution"]
+---
+
+Эта страница предназначена для сопровождающих документацию. Mintlify-корень — каталог `docs/`: здесь лежат `docs.json`, `.mintignore` и все MDX. Постоянные инструкции агента — в `docs/AGENTS.md` и `.cursor/rules/mintlify-docs.mdc`. Skills Mintlify лежат в `.agents/skills/`; MCP — в `.cursor/mcp.json`. Для работы с документацией вызывайте субагента `mintlify-docsops` (`.cursor/agents/mintlify-docsops.md`).
+
+<Note>
+  В Mintlify dashboard укажите content path `/docs`. Workflow `.github/workflows/pages.yml` по-прежнему публикует каталог `site/` и не заменяет этот deployment.
+</Note>
+
+## Установить инструменты
+
+<Tabs>
+  <Tab title="Mintlify CLI">
+    ```bash
+    npm install --global mint
+    mint --version
+    ```
+  </Tab>
+  <Tab title="Documentation skill">
+    ```bash
+    npx skills add https://mintlify.com/docs
+    ```
+  </Tab>
+  <Tab title="Search MCP">
+    ```bash
+    npx @mintlify/mcp@latest add mintlify
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  В Cursor официальный Mintlify plugin уже предоставляет documentation skill, read-only Search MCP и OAuth Admin MCP. Не устанавливайте вторую копию, если эти инструменты доступны в текущем workspace.
+</Info>
+
+## Рабочий цикл
+
+<Steps>
+  <Step title="Обновите контекст">
+    Сверьте текст с кодом, `config/base.conf`, `config/example.init.*`, `manifest.json`, compose/Helm и README модуля.
+  </Step>
+  <Step title="Измените MDX">
+    Сохраняйте существующие slug, добавляйте `keywords`, используйте root-relative ссылки без префикса `/docs/` и включайте новые страницы в `docs/docs.json`.
+  </Step>
+  <Step title="Запустите preview">
+    ```bash
+    cd docs
+    mint dev --no-open
+    ```
+  </Step>
+  <Step title="Проверьте качество">
+    ```bash
+    cd docs
+    mint validate
+    mint broken-links --check-anchors
+    mint a11y
+    ```
+  </Step>
+  <Step title="Просмотрите diff">
+    Убедитесь, что примеры не содержат credentials, внутренние ссылки открываются, а заявленные defaults совпадают с кодом.
+  </Step>
+</Steps>
+
+## Admin MCP
+
+Write-enabled Mintlify MCP работает через OAuth и создаёт отдельную branch session:
+
+```text
+list deployments → checkout → read/search → edit content/navigation/config → diff → save
+```
+
+`checkout` обязателен перед редакторскими операциями. Используйте `save` в режиме PR, чтобы изменения прошли review.
+
+<Warning>
+  Не смешивайте независимые изменения в одной Admin MCP session. Перед `save` всегда проверяйте `diff`.
+</Warning>
+
+## Что документировать
+
+- пользовательский результат и проверяемую процедуру;
+- реальные route names, методы и ограничения;
+- различие между base defaults, starter config и manifest state;
+- риски публичного доступа и расположение persistent data;
+- troubleshooting с конкретной командой проверки.
+
+Не переносите README дословно: README может описывать внутреннюю реализацию, несколько языков или экспериментальные детали, которые не нужны в основном user journey.

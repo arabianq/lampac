@@ -1,5 +1,7 @@
 # Lampac Next Generation
 
+![Lampac NextGen — self-hosted backend for Lampa](.github/social-preview.jpg)
+
 [![Build](https://github.com/lampac-nextgen/lampac/actions/workflows/build.yml/badge.svg)](https://github.com/lampac-nextgen/lampac/actions/workflows/build.yml)
 [![Test — build all projects](https://github.com/lampac-nextgen/lampac/actions/workflows/test-build.yml/badge.svg)](https://github.com/lampac-nextgen/lampac/actions/workflows/test-build.yml)
 [![Release](https://github.com/lampac-nextgen/lampac/actions/workflows/release.yml/badge.svg)](https://github.com/lampac-nextgen/lampac/actions/workflows/release.yml)
@@ -19,8 +21,6 @@
 [![Mintlify](https://img.shields.io/badge/powered%20by-Mintlify-18E299)](https://docs.lampac.dev)
 [![Telegram](https://img.shields.io/badge/Telegram-Chat-2CA5E0?logo=telegram&logoColor=white)](https://t.me/LampacTalks/13998)
 [![DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/lampac-nextgen/lampac)
-
-Публичный DeepWiki — английский code-wiki по репозиторию ([`.devin/wiki.json`](.devin/wiki.json), лимит 30 страниц). Канонические руководства — [docs.lampac.dev](https://docs.lampac.dev).
 
 > Самохостируемый backend-сервер для [Lampa](https://github.com/yumata/lampa). Собирает ссылки на публично доступный контент с 70+ источников и отдаёт их Lampa в виде плагинов. Построен на ASP.NET Core (.NET 10).
 

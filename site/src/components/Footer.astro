@@ -1,0 +1,36 @@
+---
+import { DEEPWIKI, DOCS, GHCR, GITHUB, TELEGRAM, t, type Lang } from "../i18n/ui";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-groups">
+      <div class="footer-group">
+        <h3>{t(lang, "footerProduct")}</h3>
+        <a href={DOCS}>{t(lang, "navDocs")}</a>
+        <a href={`${DOCS}/quickstart`}>{t(lang, "ctaQuick")}</a>
+        <a href={`${DOCS}/modules/overview`}>{t(lang, "d3t")}</a>
+        <a href={`${DOCS}/api/overview`}>{t(lang, "d4t")}</a>
+        <a href={`${GITHUB}/releases`} target="_blank" rel="noopener">{t(lang, "footerReleases")}</a>
+      </div>
+      <div class="footer-group">
+        <h3>{t(lang, "footerCommunity")}</h3>
+        <a href={GITHUB} target="_blank" rel="noopener">{t(lang, "linkGithub")}</a>
+        <a href={`${GITHUB}/issues`} target="_blank" rel="noopener">{t(lang, "footerIssues")}</a>
+        <a href={TELEGRAM} target="_blank" rel="noopener">{t(lang, "linkTelegram")}</a>
+        <a href={DEEPWIKI} target="_blank" rel="noopener">DeepWiki</a>
+        <a href={GHCR} target="_blank" rel="noopener">GHCR</a>
+      </div>
+    </div>
+    <p class="footer-legal">
+      <span>{t(lang, "footerLicense")}</span>
+      <a href={`${GITHUB}/blob/main/LICENSE`} target="_blank" rel="noopener">{t(lang, "license")}</a>
+    </p>
+  </div>
+</footer>

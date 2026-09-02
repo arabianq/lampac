@@ -6,6 +6,7 @@
 - The site uses Mintlify. Pages are MDX files with YAML frontmatter.
 - Mintlify root is this `docs/` directory: `docs.json`, `.mintignore`, and all MDX live here.
 - The parent repository is the product source of truth: application code, `config/base.conf`, `config/example.init.*`, `manifest.json`, compose/Helm, and module READMEs.
+- Public DeepWiki is not a source of truth. Do not copy Mintlify MDX into `.devin/wiki.json`. That file steers a 30-page English code wiki; operator docs stay on this Mintlify site.
 - Use the Mintlify docs MCP server to verify current components and configuration.
 - In the Mintlify dashboard the content path must be `/docs`. GitHub Pages workflow `.github/workflows/pages.yml` still publishes `site/` and does not replace this deployment.
 

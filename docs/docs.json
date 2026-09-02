@@ -37,7 +37,13 @@
     "prompt": "Поиск по документации Lampac..."
   },
   "contextual": {
-    "options": ["copy", "chatgpt", "claude", "cursor", "mcp"],
+    "options": [
+      "copy",
+      "chatgpt",
+      "claude",
+      "cursor",
+      "mcp"
+    ],
     "display": "header"
   },
   "seo": {
@@ -48,17 +54,50 @@
     }
   },
   "redirects": [
-    { "source": "/docs", "destination": "/" },
-    { "source": "/docs/index", "destination": "/" },
-    { "source": "/docs/quickstart", "destination": "/quickstart" },
-    { "source": "/docs/installation", "destination": "/installation" },
-    { "source": "/docs/configuration/:slug", "destination": "/configuration/:slug" },
-    { "source": "/docs/architecture/:slug", "destination": "/architecture/:slug" },
-    { "source": "/docs/modules/:slug", "destination": "/modules/:slug" },
-    { "source": "/docs/providers/:slug", "destination": "/providers/:slug" },
-    { "source": "/docs/deployment/:slug", "destination": "/deployment/:slug" },
-    { "source": "/docs/maintenance/:slug", "destination": "/maintenance/:slug" },
-    { "source": "/docs/api/:slug", "destination": "/api/:slug" }
+    {
+      "source": "/docs",
+      "destination": "/"
+    },
+    {
+      "source": "/docs/index",
+      "destination": "/"
+    },
+    {
+      "source": "/docs/quickstart",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/docs/installation",
+      "destination": "/installation"
+    },
+    {
+      "source": "/docs/configuration/:slug",
+      "destination": "/configuration/:slug"
+    },
+    {
+      "source": "/docs/architecture/:slug",
+      "destination": "/architecture/:slug"
+    },
+    {
+      "source": "/docs/modules/:slug",
+      "destination": "/modules/:slug"
+    },
+    {
+      "source": "/docs/providers/:slug",
+      "destination": "/providers/:slug"
+    },
+    {
+      "source": "/docs/deployment/:slug",
+      "destination": "/deployment/:slug"
+    },
+    {
+      "source": "/docs/maintenance/:slug",
+      "destination": "/maintenance/:slug"
+    },
+    {
+      "source": "/docs/api/:slug",
+      "destination": "/api/:slug"
+    }
   ],
   "api": {
     "playground": {
@@ -95,9 +134,22 @@
       {
         "header": "Проект",
         "items": [
-          { "label": "Исходный код", "href": "https://github.com/lampac-nextgen/lampac" },
-          { "label": "Релизы", "href": "https://github.com/lampac-nextgen/lampac/releases" },
-          { "label": "Сообщить о проблеме", "href": "https://github.com/lampac-nextgen/lampac/issues" }
+          {
+            "label": "Исходный код",
+            "href": "https://github.com/lampac-nextgen/lampac"
+          },
+          {
+            "label": "Релизы",
+            "href": "https://github.com/lampac-nextgen/lampac/releases"
+          },
+          {
+            "label": "DeepWiki",
+            "href": "https://deepwiki.com/lampac-nextgen/lampac"
+          },
+          {
+            "label": "Сообщить о проблеме",
+            "href": "https://github.com/lampac-nextgen/lampac/issues"
+          }
         ]
       }
     ]
@@ -118,7 +170,11 @@
           {
             "group": "Начало работы",
             "icon": "rocket",
-            "pages": ["index", "quickstart", "installation"]
+            "pages": [
+              "index",
+              "quickstart",
+              "installation"
+            ]
           },
           {
             "group": "Конфигурация",
@@ -262,7 +318,10 @@
         "groups": [
           {
             "group": "Основы",
-            "pages": ["api/overview", "api/authentication"]
+            "pages": [
+              "api/overview",
+              "api/authentication"
+            ]
           },
           {
             "group": "Справочник",

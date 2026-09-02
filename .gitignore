@@ -375,3 +375,6 @@ healthchecksdb
 # GitHub Pages static site (override global mkdocs /site ignore)
 !/site/
 !/site/**
+site/node_modules/
+site/dist/
+site/.astro/

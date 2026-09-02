@@ -911,7 +911,7 @@ pre {
 
 footer {
   border-top: 1px solid var(--border);
-  padding: 40px 24px 32px;
+  padding: 48px 24px 28px;
   color: var(--text-muted);
   font-size: 13px;
 }
@@ -919,22 +919,67 @@ footer {
 .footer-inner {
   max-width: var(--content);
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
 }
 
-.footer-groups {
+.footer-top {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  max-width: 520px;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(140px, 1fr));
+  gap: 40px 48px;
+  align-items: start;
+  padding-bottom: 36px;
+}
+
+.footer-brand {
+  max-width: 36ch;
+}
+
+.footer-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.3px;
+  min-height: var(--tap);
+  margin-bottom: 8px;
+}
+
+.footer-logo img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: block;
+}
+
+.footer-brand p {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+
+.footer-docs {
+  color: var(--accent-light);
+  font-weight: 600;
+  text-decoration: none;
+  min-height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-docs:hover {
+  text-decoration: underline;
 }
 
 .footer-group h3 {
   color: var(--text);
-  font-size: 13px;
-  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
 
 .footer-group a {
@@ -954,6 +999,10 @@ footer {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  justify-content: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: center;
 }
 
 .footer-legal a {
@@ -1067,8 +1116,15 @@ footer {
     grid-template-columns: 1fr;
   }
 
-  .footer-groups {
-    grid-template-columns: 1fr;
+  .footer-top {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px 24px;
+    padding-bottom: 28px;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+    max-width: none;
   }
 }
 

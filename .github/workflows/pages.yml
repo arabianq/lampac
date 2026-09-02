@@ -37,6 +37,14 @@ jobs:
           cache: npm
           cache-dependency-path: site/package-lock.json
 
+      - name: Cache Astro
+        uses: actions/cache@v6
+        with:
+          path: site/node_modules/.astro
+          key: astro-${{ runner.os }}-${{ hashFiles('site/package-lock.json') }}
+          restore-keys: |
+            astro-${{ runner.os }}-
+
       - name: Install
         run: npm ci
 

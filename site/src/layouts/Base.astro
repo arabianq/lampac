@@ -1,7 +1,9 @@
 ---
+import { Font } from "astro:assets";
+import { getAbsoluteLocaleUrl } from "astro:i18n";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
-import { SITE, t, homePath, type Lang } from "../i18n/ui";
+import { SITE, t, type Lang } from "../i18n/ui";
 import "../styles/global.css";
 
 interface Props {
@@ -15,11 +17,11 @@ interface Props {
 const { lang, noindex = false, isHome = false } = Astro.props;
 const title = Astro.props.title ?? t(lang, "metaTitle");
 const description = Astro.props.description ?? t(lang, "metaDescription");
-const canonical = new URL(homePath(lang), Astro.site ?? SITE).href;
+const canonical = getAbsoluteLocaleUrl(lang);
 const ogImage = new URL("/og-preview.jpg", Astro.site ?? SITE).href;
 const locale = lang === "en" ? "en_US" : "ru_RU";
-const alternateRu = new URL("/", Astro.site ?? SITE).href;
-const alternateEn = new URL("/en/", Astro.site ?? SITE).href;
+const alternateRu = getAbsoluteLocaleUrl("ru");
+const alternateEn = getAbsoluteLocaleUrl("en");
 ---
 
 <!DOCTYPE html>
@@ -45,6 +47,7 @@ const alternateEn = new URL("/en/", Astro.site ?? SITE).href;
     <meta name="twitter:image" content={ogImage} />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <Font cssVariable="--font-inter" preload />
     <title>{title}</title>
     <script is:inline>
       (function () {

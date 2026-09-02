@@ -1,6 +1,7 @@
 ---
 import Icon from "./Icon.astro";
 import JsonLd from "./JsonLd.astro";
+import { Image, Picture } from "astro:assets";
 import {
   DOCS,
   GHCR,
@@ -10,6 +11,8 @@ import {
   t,
   type Lang,
 } from "../i18n/ui";
+import hero from "../assets/hero.jpg";
+import logoMark from "../assets/logo-mark.png";
 
 interface Props {
   lang: Lang;
@@ -75,7 +78,7 @@ const copiedLabel = t(lang, "copied");
   <div class="hero-glow" aria-hidden="true"></div>
   <div class="hero-grid">
     <div class="hero-copy">
-      <img class="hero-mark" src="/logo-mark.png" width="56" height="56" alt="" />
+      <Image class="hero-mark" src={logoMark} alt="" width={56} height={56} densities={[1, 2]} />
       <p class="hero-eyebrow">{t(lang, "heroEyebrow")}</p>
       <h1>{t(lang, "heroTitle")}</h1>
       <p class="hero-lead">
@@ -102,7 +105,15 @@ const copiedLabel = t(lang, "copied");
     </div>
     <div class="hero-visual">
       <div class="hero-frame">
-        <img src="/hero.jpg" width="1200" height="1200" alt={t(lang, "heroAlt")} />
+        <Picture
+          src={hero}
+          formats={["avif", "webp"]}
+          widths={[480, 800, 1200]}
+          sizes="(max-width: 1024px) min(420px, 90vw), 520px"
+          alt={t(lang, "heroAlt")}
+          fetchpriority="high"
+          loading="eager"
+        />
       </div>
     </div>
   </div>

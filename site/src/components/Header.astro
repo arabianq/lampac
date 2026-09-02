@@ -1,5 +1,8 @@
 ---
-import { DOCS, GITHUB, t, homePath, type Lang } from "../i18n/ui";
+import { Image } from "astro:assets";
+import { getRelativeLocaleUrl } from "astro:i18n";
+import { DOCS, GITHUB, t, type Lang } from "../i18n/ui";
+import logoMark from "../assets/logo-mark.png";
 
 interface Props {
   lang: Lang;
@@ -7,7 +10,9 @@ interface Props {
 }
 
 const { lang, isHome = false } = Astro.props;
-const home = homePath(lang);
+const home = getRelativeLocaleUrl(lang);
+const ruHome = getRelativeLocaleUrl("ru");
+const enHome = getRelativeLocaleUrl("en");
 const howHref = `${home}#how`;
 const featuresHref = `${home}#features`;
 const installHref = `${home}#install`;
@@ -18,7 +23,7 @@ const homeCurrent = isHome ? "page" : undefined;
   <nav aria-label={t(lang, "navAria")}>
     <div class="nav-inner">
       <a class="nav-logo" href={home}>
-        <img src="/logo-mark.png" alt="" width="32" height="32" />
+        <Image src={logoMark} alt="" width={32} height={32} densities={[1, 2]} />
         Lampac NextGen
       </a>
       <ul class="nav-links">
@@ -34,8 +39,8 @@ const homeCurrent = isHome ? "page" : undefined;
         </li>
         <li>
           <div class="lang-switch" role="group" aria-label={t(lang, "langAria")}>
-            <a href="/" data-set-lang="ru" aria-current={lang === "ru" ? "true" : undefined}>RU</a>
-            <a href="/en/" data-set-lang="en" aria-current={lang === "en" ? "true" : undefined}>EN</a>
+            <a href={ruHome} data-astro-prefetch data-set-lang="ru" aria-current={lang === "ru" ? "true" : undefined}>RU</a>
+            <a href={enHome} data-astro-prefetch data-set-lang="en" aria-current={lang === "en" ? "true" : undefined}>EN</a>
           </div>
         </li>
       </ul>
@@ -65,8 +70,8 @@ const homeCurrent = isHome ? "page" : undefined;
     <a href={DOCS} rel="noopener">{t(lang, "navDocs")}</a>
     <a class="btn-nav-gh" href={GITHUB} target="_blank" rel="noopener">{t(lang, "linkGithub")}</a>
     <div class="lang-switch" role="group" aria-label={t(lang, "langAria")}>
-      <a href="/" data-set-lang="ru" aria-current={lang === "ru" ? "true" : undefined}>RU</a>
-      <a href="/en/" data-set-lang="en" aria-current={lang === "en" ? "true" : undefined}>EN</a>
+      <a href={ruHome} data-astro-prefetch data-set-lang="ru" aria-current={lang === "ru" ? "true" : undefined}>RU</a>
+      <a href={enHome} data-astro-prefetch data-set-lang="en" aria-current={lang === "en" ? "true" : undefined}>EN</a>
     </div>
   </div>
 </dialog>
